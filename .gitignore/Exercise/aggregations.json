@@ -1,0 +1,439 @@
+################################
+#### Aggregations EXERCISE ####
+
+# Metric Aggreagtion
+
+# Avg Mileage / on whole data set
+GET /carsdata/_search
+{
+  "aggs": {
+    "avg_mileage": {
+      "avg": {
+        "field": "mileage"
+      }
+    }
+  }
+}
+# collapes hits section to see average mileage
+
+# Metric Aggreagtion
+# Do we really need hits ?
+# Use size: 0
+# Avg Mileage
+GET /carsdata/_search
+{
+  "size": 0, 
+  "aggs": {
+    "avg_mileage": {
+      "avg": {
+        "field": "mileage"
+      }
+    }
+  }
+}
+# Now you dont need to collaps hits as its set to 0
+
+# Distinct Makers in all dataset
+# Cardinality
+# Approximate Value
+GET /carsdata/_search
+{
+  "size": 0,
+  "aggs": {
+    "distinct_maker": {
+      "cardinality": {
+        "field": "maker"
+      }
+    }
+  }
+}
+
+# Minimum mileage car we have for toyota 
+GET /carsdata/_search
+{
+  "size": 0,
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "term": {
+            "maker": {
+              "value": "toyota"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "aggs": {
+    "min_mileage": {
+      "min": {
+        "field": "mileage"
+      }
+    }
+  }
+}
+
+# Maximum mileage car we have for toyota 
+GET /carsdata/_search
+{
+  "size": 0,
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "term": {
+            "maker": {
+              "value": "toyota"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "aggs": {
+    "max_mileage": {
+      "max": {
+        "field": "mileage"
+      }
+    }
+  }
+}
+
+# Multiple stats
+GET /carsdata/_search
+{
+  "query": {
+    "range": {
+      "price_eur": {
+        "gte": 4000,
+        "lte": 100000
+      }
+    }
+  }, 
+  "size": 0,
+  "aggs": {
+    "price_stats": {
+      "stats": {
+        "field": "price_eur"
+      }
+    }
+  }
+}
+
+# Extended stats
+GET /carsdata/_search
+{
+  "query": {
+    "range": {
+      "price_eur": {
+        "gte": 4000,
+        "lte": 100000
+      }
+    }
+  }, 
+  "size": 0,
+  "aggs": {
+    "price_stats": {
+      "extended_stats": {
+        "field": "price_eur"
+      }
+    }
+  }
+}
+
+# Sum of field
+GET /carsdata/_search
+{
+  "size": 0,
+  "query": {
+    "query_string": {
+      "query": "maker:audi AND model:a3 AND fuel_type:electric"
+    }
+  },
+  "aggs": {
+    "car_prices": {
+      "sum": {
+        "field": "price_eur"
+      }
+    }
+  }
+}
+
+## Multiple Metric Aggs at same level
+# Multiple stats
+GET /carsdata/_search
+{
+  "query": {
+    "range": {
+      "price_eur": {
+        "gte": 4000,
+        "lte": 100000
+      }
+    }
+  }, 
+  "size": 0,
+  "aggs": {
+    "min_price": {
+      "min": {
+        "field": "price_eur"
+      }
+    },
+    "min_mileage": {
+      "min": {
+        "field": "mileage"
+      }
+    }
+  }
+}
+
+
+# Creating buckets using maker field
+# By default Top 10 buckets by count
+# Count is default metric aggregation
+GET carsdata/_search
+{
+  "size": 0, 
+  "aggs": {
+    "maker": {
+      "terms": {
+        "field": "maker"
+      }
+    }
+  }
+}
+
+# By default Top 10 buckets by count
+# Lets only get top 2
+GET carsdata/_search
+{
+  "size": 0, 
+  "aggs": {
+    "model": {
+      "terms": {
+        "field": "model",
+        "size": 2
+      }
+    }
+  }
+}
+
+# create buckets for prices
+# Interval 500
+GET carsdata/_search
+{
+  "size": 0,
+  "aggs": {
+    "prices": {
+      "histogram": {
+        "field": "price_eur",
+        "interval": 500
+      }
+    }
+  }
+}
+
+# How many adds we got each month
+# interval month
+GET carsdata/_search
+{
+  "size": 0, 
+  "aggs": {
+    "adds_over_time": {
+      "date_histogram": {
+        "field": "date_created",
+        "interval": "month"
+      }
+    }
+  }
+}
+
+# Don't want to see fix intervals
+# Provide your own ranges
+GET carsdata/_search
+{
+  "size": 0,
+  "aggs": {
+    "range": {
+      "date_range": {
+        "field": "date_created",
+        "format": "yyyy-MM-dd", 
+        "ranges": [
+          {
+            "from": "2016-01-01", 
+            "to": "2016-06-01"
+          },
+          {
+            "from": "2016-06-01", 
+            "to": "2017-01-01"
+          },
+          {
+            "from": "2017-01-01"
+          }
+        ]
+      }
+    }
+  }
+}
+
+# Car adds without color_slug
+GET carsdata/_search
+{
+  "size": 0, 
+  "aggs": {
+    "cars_without_color": {
+      "missing": {
+        "field": "color_slug"
+      }
+    }
+  }
+}
+
+
+# Global Aggregation
+# Compare toyota avg price with all cars
+GET /carsdata/_search
+{
+  "size": 0, 
+  "query": {
+    "match": {
+      "maker": "toyota"
+    }
+  },
+  "aggs": {
+    "all_cars": {
+      "global": {},
+      "aggs": {
+        "avg_price": {
+          "avg": {
+            "field": "price_eur"
+          }
+        }
+      }
+    },
+    "toyota_avg_price": {
+      "avg": {
+        "field": "price_eur"
+      }
+    }
+  }
+}
+
+# Query match all, Hits match all
+# Aggs are only for toyota subset
+GET /carsdata/_search
+{
+  "size": 0, 
+  "aggs": {
+    "toyota": {
+      "filter": {
+        "term": {
+          "maker": "toyota"
+        }
+      },
+      "aggs": {
+        "avg_price": {
+          "avg": {
+            "field": "price_eur"
+          }
+        }
+      }
+    }
+  }
+}
+
+# Bucket + Metric Aggregation
+# Lets get avg price along with default count
+GET carsdata/_search
+{
+  "size": 0,
+  "aggs": {
+    "maker": {
+      "terms": {
+        "field": "maker"
+      },
+      "aggs": {
+        "avg_price": {
+          "avg": {
+            "field": "price_eur"
+          }
+        }
+      }
+    }
+  }
+}
+
+# Bucket + Metric Aggregation
+# Lets get avg price + avg milleage
+GET carsdata/_search
+{
+  "size": 0,
+  "aggs": {
+    "maker": {
+      "terms": {
+        "field": "maker"
+      },
+      "aggs": {
+        "avg_price": {
+          "avg": {
+            "field": "price_eur"
+          }
+        },
+        "avg_mileage": {
+          "avg": {
+            "field": "mileage"
+          }
+        }
+      }
+    }
+  }
+}
+
+# Sub aggregations
+# Top 5 makers and for each top 2 models
+GET carsdata/_search
+{
+  "size": 0,
+  "aggs": {
+    "maker": {
+      "terms": {
+        "field": "maker",
+        "size": 5
+      },
+      "aggs": {
+        "model": {
+          "terms": {
+            "field": "model",
+            "size": 2
+          }
+        }
+      }
+    }
+  }
+}
+
+# Sub aggregations
+# Histogram with month interval
+# Each bar of histogram further divided by top 3 makers for that month
+GET carsdata/_search
+{
+  "size": 0,
+  "aggs": {
+    "month_histogram": {
+      "date_histogram": {
+        "field": "date_created",
+        "interval": "month"
+      },
+      "aggs": {
+        "model": {
+          "terms": {
+            "field": "maker",
+            "size": 3
+          }
+        }
+      }
+    }
+  }
+}
+#### END OF AGGREGATION EXERCISE ####
+#####################################

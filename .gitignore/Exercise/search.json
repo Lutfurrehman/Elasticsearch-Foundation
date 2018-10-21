@@ -1,0 +1,360 @@
+
+########################################
+############ Search Exercise ###########
+
+# Search all - top 10
+GET product_reviews/_search
+
+# Search for term 'buy' OR 'again'
+GET product_reviews/_search?q=buy again
+
+# Search for phrase "buy again" as phrase
+GET product_reviews/_search?q="buy again"
+
+# Search for phrase "buy again" in reviews.title field
+GET product_reviews/_search?q=reviews.title:"buy again"
+
+# Search for phrase "buy again" in reviews.title field
+# AND category is movies
+GET product_reviews/_search?q=reviews.title:"buy again" AND -categories:Movies&size=20
+
+# Sort dateAdded:desc
+GET product_reviews/_search?q=reviews.title:"buy again" AND -categories:Movies&size=20&sort=dateAdded:desc
+
+
+# Match All - default top 10
+GET product_reviews/_search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+# Term Query
+# Term query is exact match
+# use .keyword with term
+GET product_reviews/_search
+{
+  "query": {
+    "term": {
+      "brand.keyword": {
+        "value": "Olay"
+      }
+    }
+  }
+}
+
+# Match Query
+# Default OR
+# Query analyzed 
+# Default analyzer same as field in mapping
+GET product_reviews/_search
+{
+  "query": {
+    "match": {
+      "reviews.text": "refund angry terrible anoying sad"
+    }
+  }
+}
+
+# Match Query
+# Query analyzed 
+# Default analyzer same as field in mapping
+# Operator and
+GET product_reviews/_search
+{
+    "query": {
+        "match" : {
+            "reviews.text" : {
+                "query" : "refund terrible",
+                "operator" : "and"
+            }
+        }
+    }
+}
+
+# Match Query
+# Default OR
+# Query analyzed 
+# Default analyzer same as field in mapping
+# minimum_should_match
+GET product_reviews/_search
+{
+  "query": {
+    "match": {
+      "reviews.text": {
+        "query": "refund angry terrible anoying sad",
+        "minimum_should_match": 2
+      }
+    }
+  }
+}
+
+
+# Match Phrase
+# order matters
+GET product_reviews/_search
+{
+  "query": {
+    "match_phrase": {
+      "reviews.text": "Breeze Jasmine"
+    }
+  }
+}
+
+
+# Match Phrase with slop
+# Phrase all terms must be present 
+GET product_reviews/_search
+{
+  "query": {
+    "match_phrase": {
+      "reviews.text": {
+        "query": "recommend kids movie",
+        "slop":3
+      }
+    }
+  }
+}
+
+# Match Phrase with slop
+# Phrase all terms must be present 
+GET product_reviews/_search
+{
+  "query": {
+    "match_phrase": {
+      "reviews.text": {
+        "query": "recommend kids movie",
+        "slop":4
+      }
+    }
+  }
+}
+
+# Multi Match
+GET product_reviews/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "recommend kids movie",
+      "minimum_should_match": "100%",
+      "fields": [
+        "reviews.text",
+        "reviews.title^4"
+      ]
+    }
+  }
+}
+
+# Range Date
+GET product_reviews/_search
+{
+  "query": {
+    "range": {
+      "dateAdded": {
+        "gte": "2017-07-04T13:32:58Z"
+      }
+    }
+  }
+}
+
+# Field Exists
+GET product_reviews/_search
+{
+  "query": {
+    "exists": {
+      "field": "ean"
+    }
+  }
+}
+
+# Prefix 
+GET product_reviews/_search
+{
+  "query": {
+    "prefix": {
+      "manufacturer.keyword": "Hoo"
+    }
+  }
+}
+
+# Source Filtering
+GET product_reviews/_search
+{
+  "_source": {
+    "includes": [
+      "name",
+      "manufacturer"
+    ],
+    "excludes": [
+      "reviews.*"
+    ]
+  },
+  "query": {
+    "range": {
+      "dateAdded": {
+        "gte": "2017-07-04T13:32:58Z"
+      }
+    }
+  }
+}
+
+# Bool Query
+# Filter - cache advantage
+GET product_reviews/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "reviews.text": "suction problem electrical"
+          }
+        }
+      ],
+      "filter": [
+        {
+          "term": {
+            "categories": "Vacuums"
+          }
+        }
+      ]
+    }
+  }
+}
+
+# Bool Query
+# Must Not
+GET product_reviews/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "reviews.text": "suction problem electrical"
+          }
+        }
+      ],
+      "must_not": [
+        {
+          "range": {
+            "reviews.rating": {
+              "gte": 3,
+              "lte": 5
+            }
+          }
+        }
+      ],
+      "filter": [
+        {
+          "term": {
+            "categories": "Vacuums"
+          }
+        }
+      ]
+    }
+  }
+}
+
+# Bool Query
+# Should is optional 
+# Should boosts score
+GET product_reviews/_search
+{
+  "_source": ["reviews.title","reviews.username","categories","upc"], 
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "term": {
+            "categories": "Vacuums"
+          }
+        }
+      ],
+      "should": [
+        {
+          "term": {
+            "reviews.username": "jenn"
+          }
+        },
+        {
+          "term": {
+            "upc": "502"
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+GET product_reviews/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "reviews.text": "suction problem electrical"
+          }
+        }
+      ],
+      "must_not": [
+        {
+          "range": {
+            "reviews.rating": {
+              "gte": 3,
+              "lte": 5
+            }
+          }
+        }
+      ],
+      "should": [],
+      "filter": [
+        {
+          "term": {
+            "categories": "Vacuums"
+          }
+        },
+        {
+          "term": {
+            "reviews.doRecommend": false
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+# fuzziness / change value & text to see impact
+GET product_reviews/_search
+{
+  "query": {
+    "fuzzy": {
+      "reviews.text": {
+        "value": "disinfcting",
+        "fuzziness": 2
+      }
+    }
+  }
+}
+
+# highlighting / shows at the end of each result
+GET product_reviews/_search
+{
+  "query": {
+    "match": {
+      "reviews.text": "problem"
+    }
+  },
+  "highlight": {
+    "fields": {
+      "reviews.text": {}
+    }
+  }
+}
+
+#### End Search Exercise ####
+##############################

@@ -1,0 +1,296 @@
+
+#### Mapping Exercise ####
+##########################
+
+# Delete index clean start
+DELETE my_index
+
+# Create document
+PUT my_index/doc/1
+{
+  "name": "Diet Cola"
+}
+
+# GET mapping - did you created mappings?
+# Dynamic mapping
+GET my_index/_mapping
+
+# Delete index
+DELETE my_index
+
+# Create index with custom mappings
+PUT my_index
+{
+  "mappings": {
+    "doc": {
+      "properties": {
+        "category": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "dateAdded": {
+          "type": "date"
+        },
+        "inStock": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+# Check index mappings
+GET my_index/_mapping
+
+# Add rating mapping to existing index
+# syntax {index}/_mapping/{type}
+PUT my_index/_mapping/doc
+{
+  "properties": {
+    "rating": {
+      "type": "integer"
+    }
+  }
+}
+
+# Do we really need integer for rating
+# Isn't byte enough
+# Lets update
+# Can't update existing field mapping
+PUT my_index/_mapping/doc
+{
+  "properties": {
+    "rating": {
+      "type": "byte"
+    }
+  }
+}
+
+
+# Delete index
+DELETE my_index
+
+# Why not Dynamic mapping ?
+PUT my_index/doc/1
+{
+  "ip": "172.168.0.1"
+}
+# Dynamic treated ip as text/keyword
+# Should have be type ip
+GET my_index/_mapping
+
+# Delete index
+DELETE my_index
+
+# Why not Dynamic mapping ?
+PUT my_index/doc/1
+{
+  "rating": "5"
+}
+# Dynamic treated rating as text/keyword
+# Don't you want to run range queries
+# Should have be type Number
+GET my_index/_mapping
+
+# Delete index
+DELETE my_index
+
+# Why not Dynamic mapping ?
+# Lets index doc without qoutes around 5
+PUT my_index/doc/1
+{
+  "rating": 5
+}
+# Dynamic treated rating as long
+# byte should have been enough
+GET my_index/_mapping
+
+
+# Delete index
+DELETE my_index
+
+# Why not Dynamic mapping ?
+PUT my_index/doc/1
+{
+  "username": "myname"
+}
+
+# Dynamic treated username as text/keyword
+# Do we really need text ?
+# keyword should have been enough
+GET my_index/_mapping
+
+
+# Delete index
+DELETE my_index
+
+# Why not Dynamic mapping ?
+PUT my_index/doc/1
+{
+  "identifier": 126754386
+}
+# dynamic treated identifier as long
+GET my_index/_mapping
+
+# what if some other documents have it as 
+# alpha numeric
+# you will have to reindex data
+PUT my_index/doc/2
+{
+  "identifier": "126A5B38Bla"
+}
+# Return error, can't index
+######################
+#### INDEX FALSE #####
+
+# Delete index
+DELETE my_index
+
+# just want to store a field
+# but will never search on it
+# make field index: false
+PUT my_index
+{
+  "mappings": {
+    "doc": {
+      "properties": {
+        "category": {
+          "type": "keyword"
+        },
+        "nonsearchable" : {
+          "type": "keyword",
+          "index": false
+        },
+        "dateAdded": {
+          "type": "date"
+        }
+      }
+    }
+  }
+}
+# Put document in my_ondex
+PUT my_index/doc/1
+{
+  "category" : "searchit",
+  "nonsearchable": "searchit"
+}
+
+# Cannot search on field [nonsearchable] since it is not indexed
+# Because index:false
+# you will get error
+GET my_index/_search
+{
+  "query": {
+    "term": {
+      "nonsearchable": "searchit"
+    }
+  }
+}
+
+# You can search on category
+# by default index:true
+GET my_index/_search
+{
+  "query": {
+    "match": {
+      "category": "searchit"
+    }
+  }
+}
+
+
+# DISABLE  DYNAMIC MAPPING#
+
+# Delete index
+DELETE my_index
+
+PUT my_index
+{
+  "mappings": {
+    "doc": {
+      "dynamic": "false",
+      "properties": {
+        "category": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "dateAdded": {
+          "type": "date"
+        },
+        "name": {
+          "dynamic": "true",
+          "properties": {
+            "firstname": {
+              "type": "text"
+            }
+          }
+        },
+        "batch": {
+          "dynamic": "strict",
+          "properties": {
+            "number": {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+# Description won't be indexed 
+# But it will be stored
+PUT my_index/doc/1
+{
+  "category": "beauty",
+  "description": "this field will not be indexed as its parent is index false" 
+}
+
+# Description will NOT show up
+GET my_index/_mapping
+
+# Its stored
+GET my_index/doc/1
+
+# But you can't search on it
+# No results as its not indexed
+GET my_index/_search
+{
+  "query": {
+    "match": {
+      "description": "this field"
+    }
+  }
+}
+
+# name.lastname will be indexed and part of mapping
+# Because its parent is dynamic true
+PUT my_index/doc/2
+{
+  "category": "beauty",
+  "name.lastname": "this field will be indexed as its parent is dynamic true" 
+}
+
+# lastname should show up in mapping
+GET my_index/_mapping
+
+
+# batch.name will through error
+# Because its parent is dynamic strict
+PUT my_index/doc/3
+{
+  "category": "beauty",
+  "batch.name": "this will through error as its parent is dynamic strict" 
+}
+
+#### END of Mapping Exercise ####
+#################################
