@@ -1,0 +1,139 @@
+
+#########################################
+#### Analysis Exercise ####
+
+# _analyze is used to test which tokens will be created
+
+# standard analyser
+GET _analyze
+{
+  "analyzer": "standard",
+  "text": "the quick brown fox jumped over the lazy dog!.?"
+}
+
+# standard analyser with variation in text
+GET _analyze
+{
+  "analyzer": "standard",
+  "text": "the quick brown-fox jumps over the lazy dog!.?"
+}
+
+# whitespace analyser on same text
+GET _analyze
+{
+  "analyzer": "whitespace",
+  "text": "the quick brown fox jumped over the lazy dog!.?"
+}
+
+# keyword analyser on smae text
+GET _analyze
+{
+  "analyzer": "keyword",
+  "text": "the quick brown fox jumped over the lazy dog!.?"
+}
+
+### Change text few times 
+### Run all above analysers & compare outputs
+#############################################
+
+# standard analyzer doesn't remove stop words
+# Let use custom one
+GET _analyze
+{
+  "tokenizer": "standard",
+  "filter": ["lowercase", "stop"], 
+  "text": "the quick brown fox jumped over the lazy dog!.?"
+}
+
+# Order of filters 
+GET _analyze
+{
+  "tokenizer": "whitespace",
+  "filter": ["lowercase","stop"],
+  "text": "The brown Fox Is Quick"
+}
+
+# Order of filters 
+GET _analyze
+{
+  "tokenizer": "whitespace",
+  "filter": ["stop", "lowercase"],
+  "text": "The brown Fox Is Quick"
+}
+
+## stop words are always lowercase
+
+
+# Defining analyzer for Elasticsearch index
+# Delete my_index for clean start
+DELETE my_index
+
+PUT my_index
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "standard_html_strip": {
+          "type":      "custom",
+          "tokenizer": "standard",
+          "char_filter": [
+            "html_strip"
+          ],
+          "filter": [
+            "lowercase",
+            "asciifolding"
+          ]
+        }
+      }
+    }
+  }
+}
+
+# html tags removed
+# lowercase
+POST my_index/_analyze
+{
+  "analyzer": "standard_html_strip",
+  "text": "The brown <b>Foxé</b> is Quick?"
+}
+
+# Attaching Analyzer to name field
+# by default every text field has standard analyzer
+# analyzer: standard
+DELETE my_index
+PUT my_index
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "standard_html_strip": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "char_filter": [
+            "html_strip"
+          ],
+          "filter": [
+            "lowercase",
+            "asciifolding"
+          ]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "doc": {
+      "properties": {
+        "name": {
+          "type": "text",
+          "analyzer": "standard_html_strip"
+        },
+        "description": {
+          "type": "text",
+          "analyzer": "whitespace"
+        }
+      }
+    }
+  }
+}
+#### END of Analysis Exercise ####
+##################################

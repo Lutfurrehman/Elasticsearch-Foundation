@@ -1,0 +1,144 @@
+################################################
+#### Distributed nature & cluster management####
+
+# stop current runnung instance of elasticsearch by pressing ctrl+c at command line
+# move to "training/node1" folder and unzip elsticsearch
+# move to "training/node2" folder and unzip elsticsearch
+# move to "training/node3" folder and unzip elsticsearch
+
+# open command terminal and run elasticsearch from node 1 folder
+
+# node information
+GET _cat/nodes
+
+# node information with headers
+GET _cat/nodes?v
+
+# node detail information
+GET _nodes/settings
+
+# cluster health
+GET _cluster/health
+
+# Shards information
+GET _cat/shards?v
+# no shard as its a fresh cluster with no data
+
+# write some documents
+PUT myindex_1/type/1
+{
+  "name" : "urname"
+}
+
+PUT myindex_1/type/2
+{
+  "name" : "friendsname"
+}
+
+# check cluster health now
+GET _cluster/health
+# why its yellow and how to fix it
+# yellow status because of unassigned shards
+
+# check shards status
+GET _cat/shards?v
+# we have unassigne replicas as we only have one node
+
+## start node2 in new command line terminal by running elasticsearch from node2 folder
+
+# how many nodes running now 
+GET _cat/nodes
+# if not 2 then wait
+
+# cluster health now
+GET _cluster/health
+# why its green now
+
+GET _cat/shards?v
+# no unassigned shards. why?
+
+# increase no of replicas
+
+PUT myindex_1/_settings
+{
+  "index" : {
+    "number_of_replicas" : 2
+  }
+}
+
+# check cluster status
+GET _cluster/health
+# why its yellow agin
+
+# check shards status
+GET _cat/shards?v
+# we have unassigne replicas as we only have 2 nodes
+
+## start node3 in new command line terminal by running elasticsearch from node3 folder
+
+# how many nodes running now 
+GET _cat/nodes
+# if not 3 then wait
+
+# cluster health now
+GET _cluster/health
+# why its green now
+
+GET _cat/shards?v
+# no unassigned shards. why?
+
+# see distribution of shards across cluster
+GET _cat/shards/myindex_1?v
+
+#### check node roles
+GET _cat/nodes?v
+
+# stop node3, edit elasticsearch.yml of node3 and put node.data : false, same the file and run elasticsearch again
+
+# how many nodes running now 
+GET _cat/nodes?v
+# if not 3 then wait
+#  whats the change in node3 role
+
+# cluster health now
+GET _cluster/health
+# why its yellow now
+
+GET _cat/shards?v
+# unassigned shards. why?
+# we have set node.data :false for node 3 so it cant have data
+
+## investigate cluster health at indicies level
+GET _cluster/health?level=indices
+
+## health of specific index
+GET _cluster/health/myindex_1
+
+## shard level health of particuler index
+GET _cluster/health/myindex_1?level=shards
+
+## health of all indicies at shard level
+GET _cluster/health?level=shards
+
+# decrease no of replicas
+PUT myindex_1/_settings
+{
+  "index" : {
+    "number_of_replicas" : 1
+  }
+}
+
+# cluster health now
+GET _cluster/health
+# why its green now
+
+GET _cat/shards?v
+# no unassigned shards. why?
+
+## clean end of exercise
+DELETE myindex_1
+
+### stop all three nodes
+### run elasticsearch from elasticsearch-6.3.0
+#### End of Lab ####
+#####################################################
